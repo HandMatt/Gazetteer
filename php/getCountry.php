@@ -39,26 +39,38 @@
   curl_setopt($ch, CURLOPT_URL, $restCountriesUrl);
   $restCountriesResponse = curl_exec($ch);
 
+  // Gets wiki info using GeoNames
+  $geonamesWikiUrl = "http://api.geonames.org/wikipediaSearchJSON?q=" . urlencode($countryName) . "&maxRows=20&username=" . $geonamesUsername;
+  curl_setopt($ch, CURLOPT_URL,$geonamesWikiUrl);
+  $geonamesWikiResponse = curl_exec($ch);
+
   // Set latlng values for weather
   $restCountriesResult = json_decode($restCountriesResponse, true);
   $latitude = $restCountriesResult['latlng'][0];
   $longitude = $restCountriesResult['latlng'][1];
-
-  // Gets wiki info using GeoNames
-  $geonamesWikiUrl = "http://api.geonames.org/wikipediaSearchJSON?q=" . urlencode($countryName) . "&maxRows=10&username=" . $geonamesUsername;
-  curl_setopt($ch, CURLOPT_URL,$geonamesWikiUrl);
-  $geonamesWikiResponse = curl_exec($ch);
 
   // Gets weather data from OpenWeather
   $openWeatherUrl = "https://api.openweathermap.org/data/2.5/onecall?lat=".$latitude."&lon=" . $longitude . "&exclude=minutely,hourly,alerts&appid=" . $openWeatherKey;
   curl_setopt($ch, CURLOPT_URL,$openWeatherUrl);
   $openWeatherResponse = curl_exec($ch);
 
+  // Set bounding box for cities
+  $countryInfoResult = json_decode($countryInfoResponse, true);
+  $north = $countryInfoResult['geonames'][0]['north'];
+  $east = $countryInfoResult['geonames'][0]['east'];
+  $south = $countryInfoResult['geonames'][0]['south'];
+  $west = $countryInfoResult['geonames'][0]['west']; 
+
+  // Gets cities and place names GeoNames
+  $geonamesCitesUrl = "http://api.geonames.org/citiesJSON?north=" . $north . "&south=" . $south . "&east=" . $east . "&west=" . $west . "&maxRows=20&username=" . $geonamesUsername;
+  curl_setopt($ch, CURLOPT_URL,$geonamesCitesUrl);
+  $geonamesCitesResponse = curl_exec($ch);
+
   curl_close($ch);
   
-  $countryInfoResult = json_decode($countryInfoResponse, true);
   $geonamesWikiResult = json_decode($geonamesWikiResponse, true);
   $openWeatherResult = json_decode($openWeatherResponse, true);
+  $geonamesCitesResult = json_decode($geonamesCitesResponse, true);
 
   // Final output
   $output['status']['code'] = "200";
@@ -72,6 +84,7 @@
   $output['restCountries'] = $restCountriesResult;
   $output['geonamesWiki'] = $geonamesWikiResult;
   $output['openWeather'] = $openWeatherResult;
+  $output['geonamesCities'] = $geonamesCitesResult;
 
   header('Content-Type: application/json; charset=UTF-8');
   echo json_encode($output);

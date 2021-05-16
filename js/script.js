@@ -18,6 +18,19 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png
 	pane: 'labels'
 }).addTo(map);
 
+// Create custom Icons
+var MapIcon = L.Icon.extend({
+	options: {
+		iconSize: [25, 41],
+		iconAnchor: [12, 40],
+		popupAnchor: [0, -42]
+	}
+});
+var userIcon = new MapIcon({iconUrl: 'images/userMarker.png'}),
+		capitalIcon = new MapIcon({iconUrl: 'images/capitalMarker.png'}),
+		cityIcon = new MapIcon({iconUrl: 'images/cityMarker.png'}),
+		oceanIcon = new MapIcon({iconUrl: 'images/oceanMarker.png'});
+
 // GeoJSON variables
 const geoJsonStyle = {
 	"color": "#85e384",
@@ -86,10 +99,24 @@ function getPosition() {
 		navigator.geolocation.getCurrentPosition(res, rej);
 	});
 }
+function getLocation() {
+		getPosition().then((res) => {
+		formData.lat = res.coords.latitude;
+		formData.lng = res.coords.longitude;
+		formData.geoLocate = true;
+		L.marker([formData.lat, formData.lng], {icon: userIcon}).addTo(map)
+			.bindPopup('Your location');
+		getCountryCode(formData);
+		setNull(formData);
+	}).catch((err) => {
+		console.error(err.message);
+		removeLoad();
+	});
+}
 
 function getCountryCode(formData) {
 	// Loading screen on search
-	$("#preloader").attr("style", "display: flex !important");
+	$("#preloader").attr("style", "display: show !important");
 
 	$.ajax({
 		url: "php/getCountryCode.php",
@@ -134,10 +161,8 @@ function getOceanData(formData) {
 		},
 		success: (result) => {	
 			if (result.status.name == "ok") {
-				console.log(result.ocean.ocean.name);
-				console.log(result.geonameId.wikipediaURL);
 				removeLoad();
-				L.marker([formData.lat, formData.lng]).addTo(map)
+				L.marker([formData.lat, formData.lng], {icon: oceanIcon}).addTo(map)
 					.bindPopup(`<a href=https://${result.geonameId.wikipediaURL} target="_blank">${result.ocean.ocean.name}</a>`).openPopup();
 			}
 		}
@@ -214,6 +239,30 @@ function getCountryData(formData) {
 					);
 				}
 
+				// Geonames Cities Data
+				if (!result.geonamesCities.status) {
+					const geoCities = result.geonamesCities.geonames.filter(item => item.countrycode.includes(result['countryCode']));
+					let cities = geoCities.length;
+					if (cities > 10) {
+						cities = 10;	
+					}
+					for (let i = 0; i < cities; i++) {
+						if (geoCities[i].fcode == "PPLC") {
+							L.marker([geoCities[i].lat, geoCities[i].lng], {icon: capitalIcon}).addTo(map)
+							.bindPopup(
+								`<h5><a href=https://${geoCities[i].wikipedia} target="_blank">${geoCities[i].name}</a> - Capital</h3>
+								<strong>Population:</strong> ${geoCities[i].population}`
+							);	
+						} else {
+							L.marker([geoCities[i].lat, geoCities[i].lng], {icon: cityIcon}).addTo(map)
+							.bindPopup(
+								`<h5><a href=https://${geoCities[i].wikipedia} target="_blank">${geoCities[i].name}</a></h3>
+								<strong>Population:</strong> ${geoCities[i].population}`
+							);
+						}
+					}
+				}
+
 				// Update currency dropdown selection
 				if (typeof currency !== "undefined") {
 					if (result.geoLocate) {
@@ -228,9 +277,6 @@ function getCountryData(formData) {
 
 				// Remove Loader
 				removeLoad();
-				L.marker([restCountries.latlng[0], restCountries.latlng[1]]).addTo(map)
-					.bindPopup(`${geonamesInfo['countryName']}`);
-
 				showData();
 			}
 		}
@@ -318,23 +364,21 @@ function getCurrencyExchange() {
 		$('#exchangeResultH').html("Result:")
 		$('#exchangeResult').html("Form incomplete")
 	}
-}
+} 
 
 // Events
-// Get user position and country data when document ready
-$(document).ready(() => {
-	getPosition().then((res) => {
-		formData.lat = res.coords.latitude;
-		formData.lng = res.coords.longitude;
-		formData.geoLocate = true;
-		L.marker([formData.lat, formData.lng]).addTo(map)
-			.bindPopup('Your location');
-		getCountryCode(formData);
-		setNull(formData);
-	}).catch((err) => {
-		console.error(err.message);
-		removeLoad();
-	});
+// Get user position and country data when permission granted
+$('#allowGeoLoc').on('click', () => {
+	$('#landingPage').attr("style", "display: none !important");
+	getLocation();
+});
+$('#locateMe').on('click', () => {
+	$('#landingPage').attr("style", "display: show !important");
+});
+
+$('#denyGeoLoc').on('click', () => {
+	$('#landingPage').attr("style", "display: none !important");
+	removeLoad();
 });
 
 // Select country by map click
