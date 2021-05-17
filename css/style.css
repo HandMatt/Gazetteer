@@ -83,7 +83,7 @@ body {
 }
 /*Buttons*/
 #allowGeoLoc,
-#denyGeoLoc,
+#continueToApp,
 #locateMe,
 #showDataBtn,
 #myTab .nav-link,
@@ -95,7 +95,7 @@ body {
   border: 2px solid #5c5f72;
 }
   #allowGeoLoc:hover,
-  #denyGeoLoc:hover,
+  #continueToApp:hover,
   #locateMe:hover,
   #showDataBtn:hover,
   #myTab .nav-link:hover,
@@ -105,7 +105,7 @@ body {
     border-color: #2c2e38; 
   }
 #allowGeoLoc,
-#denyGeoLoc {
+#continueToApp {
   min-width: 150px; 
 }
 #locateMe {

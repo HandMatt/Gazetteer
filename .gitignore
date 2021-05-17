@@ -1,3 +1,6 @@
 # Ignore 
 php/api_keys.php
+index.min.html
+css/style.min.css
+js/script.min.js
 documentation/*

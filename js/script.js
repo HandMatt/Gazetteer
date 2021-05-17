@@ -61,14 +61,23 @@ $.ajax({
 });
 
 // Populate currency <select> options
-const currencyDropdown = $('.currency-dropdown');
-currencyDropdown.empty();
-currencyDropdown.append('<option selected="true" disabled>Choose Currency</option>');
-currencyDropdown.prop('selectedIndex', 0);
-$.getJSON("json/currencies.json", function (currencies) {
-	currencies.forEach(currency => {
-		currencyDropdown.append(`<option value=${currency.cc}>${currency.name} (${currency.symbol})</option>`);
-	});
+$.ajax({
+	url: 'php/getCurrencyList.php',
+	type: 'GET',
+	dataType: 'JSON',
+	error: (jqXHR, textStatus, errorThrown) => {
+		console.warn(jqXHR.responseText);
+		console.log(errorThrown);
+	},
+	success: (result) => {
+		const currencyDropdown = $('.currency-dropdown');
+		currencyDropdown.empty();
+		currencyDropdown.append('<option selected="true" disabled>Choose Currency</option>');
+		currencyDropdown.prop('selectedIndex', 0);
+		result['data'].forEach(currency => {
+			currencyDropdown.append(`<option value=${currency.cc}>${currency.name} (${currency.symbol})</option>`);
+		});
+	}
 });
 
 // Dynamic Weather Headers
@@ -367,18 +376,15 @@ function getCurrencyExchange() {
 } 
 
 // Events
-// Get user position and country data when permission granted
-$('#allowGeoLoc').on('click', () => {
-	$('#landingPage').attr("style", "display: none !important");
+// Get user position and country data when document ready
+$(document).ready(() => {
 	getLocation();
 });
-$('#locateMe').on('click', () => {
-	$('#landingPage').attr("style", "display: show !important");
-});
 
-$('#denyGeoLoc').on('click', () => {
+
+// Remove landing page
+$('#continueToApp').on('click', () => {
 	$('#landingPage').attr("style", "display: none !important");
-	removeLoad();
 });
 
 // Select country by map click
