@@ -1,41 +1,221 @@
 /* Map Settings */
-// Initialise map
-var map = L.map('map');
-map.createPane('labels');
-map.setView([0, 0], 2);
-map.getPane('labels').style.zIndex = 650;
-map.getPane('labels').style.pointerEvents = 'none';
+// Tile layers
+var Esri_WorldImagery = L.tileLayer.provider('Esri.WorldImagery'),
+Esri_WorldPhysical = L.tileLayer.provider('Esri.WorldPhysical'),
+Voyager_StreetMap = L.tileLayer.provider('CartoDB.VoyagerNoLabels'),
+Stamen_Labels = L.tileLayer.provider('Stamen.TonerHybrid'),
+WaymarkedTrails_hiking = L.tileLayer.provider('WaymarkedTrails.hiking'),
+WaymarkedTrails_cycling = L.tileLayer.provider('WaymarkedTrails.cycling'),
+OpenWeatherMap_Clouds = L.tileLayer.provider('OpenWeatherMap.Clouds', {
+    apiKey: '576f8cb6f5df3e34ed002ec22b7d0bbd'
+}),
+OpenWeatherMap_Pressure = L.tileLayer.provider('OpenWeatherMap.Pressure', {
+    apiKey: '576f8cb6f5df3e34ed002ec22b7d0bbd'
+}),
+OpenWeatherMap_Wind = L.tileLayer.provider('OpenWeatherMap.Wind', {
+    apiKey: '576f8cb6f5df3e34ed002ec22b7d0bbd'
+});
+DataMarkers = L.layerGroup([]);
 
-L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.{ext}', {
-	attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-	subdomains: 'abcd',
-	minZoom: 1,
-	maxZoom: 16,
-	ext: 'jpg'
-}).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-	attribution: '©OpenStreetMap, ©CartoDB',
-	pane: 'labels'
-}).addTo(map);
+// Initialise map
+var map = L.map('map', {
+	center: [0, 0],
+	zoom: 2,
+	layers: [Esri_WorldImagery, DataMarkers]
+});
+
+// Map tile layer control
+var baseLayers = {
+	"Satellite": Esri_WorldImagery,
+	"Terrain" : Esri_WorldPhysical, 
+	"Roads": Voyager_StreetMap
+}
+var overlays = {
+	"Map Labels": Stamen_Labels,
+	"Hiking trails": WaymarkedTrails_hiking, 
+	"Cycle trails": WaymarkedTrails_cycling,
+	"Markers": DataMarkers,
+	"Clouds": OpenWeatherMap_Clouds,
+	"Pressure": OpenWeatherMap_Pressure,
+	"Wind": OpenWeatherMap_Wind 
+}
+L.control.layers(baseLayers, overlays).addTo(map);
+
+// Select random country button
+var randomButton = L.easyButton('fas fa-random fa-lg', function(_btn, _map){
+	const select  = document.getElementById('country-dropdown');
+	const options = select.children;  
+	const random  = Math.floor(Math.random() * options.length);
+	select.value = options[random].value;
+	
+	formData.country = $('#country-dropdown option:selected').text();
+	formData.iso_a2 = $('#country-dropdown').val();
+	formData.geoLocate = null;
+	getGeoJSON(formData);
+	getCountryData(formData);
+	setNull(formData); 
+}, 'Random country').addTo(map);
+
+// Country data display buttons
+var infoButton = L.easyButton('fas fa-info fa-lg', function(_btn, _map){
+	$("#myTab").children().children().removeClass("active");
+	$("#info-tab").addClass("active");
+	$("#myTabContent").children().removeClass("active show");
+	$("#info").addClass("active show");
+	showData();
+}, 'Info'),
+weatherButton = L.easyButton('fas fa-cloud-sun-rain fa-lg', function(_btn, _map){
+	$("#myTab").children().children().removeClass("active");
+	$("#weather-tab").addClass("active");
+	$("#myTabContent").children().removeClass("active show");
+	$("#weather").addClass("active show");
+	showData();
+}, 'Weather'),
+exchangeButton = L.easyButton('fas fa-coins fa-lg', function(_btn, _map){
+	$("#myTab").children().children().removeClass("active");
+	$("#exchange-tab").addClass("active");
+	$("#myTabContent").children().removeClass("active show");
+	$("#exchange").addClass("active show");
+	showData();
+}, 'Exchange');
+
+L.easyBar([infoButton, weatherButton, exchangeButton]).addTo(map);
+
+var disasterButton = L.easyButton({
+	states: [{
+		stateName: 'get-disasters',
+		icon: 'fas fa-exclamation-circle fa-lg',
+		title: 'Current disasters', 
+		onClick: function(btn, map){
+			btn.button.style.backgroundColor = 'black';
+			btn.button.style.color = 'white';
+			$.ajax({
+				url: 'php/getWorldDisasters.php',
+				type: 'GET',
+				dataType: 'JSON',
+				error: (jqXHR, _textStatus, errorThrown) => {
+					btn.button.style.backgroundColor = 'white';
+					btn.button.style.color = 'black';
+					console.warn(jqXHR.responseText);
+					console.log(errorThrown);
+					map.spin(false);
+				},
+				success: (result) => {
+					DataMarkers.addLayer(disasterMarkers);
+					result.disasters.forEach(disaster => {
+						countries = disaster.fields.affected_countries; 
+						longitude = disaster.fields.primary_country.location.lon;
+						latitude = disaster.fields.primary_country.location.lat;
+						var popup = L.responsivePopup().setContent(
+							`<div class="d-flex flex-column">
+									<div class="d-flex justify-content-between">
+										<h2>${disaster.fields.name}</h2>
+									</div>
+									<hr class="m-0 mb-2">
+									<div class="d-flex justify-content-between">
+										<h3 class="fs-6 m-0">Date created:</h3>
+										<span class="fs-6">${disaster.fields.date}<span>									
+									</div>
+									<div class="d-flex justify-content-between">
+										<h3 class="fs-6 m-0">Disater type:</h3>
+										<span class="fs-6">${disaster.fields.primary_type.name}<span>									
+									</div>
+									<div class="d-flex flex-column">
+										<h3 class="fs-6 m-0">Affected countries:</h3>
+										<span class="fs-6 text-right">${disaster.fields.affected_countries}</span>
+									</div>
+									<div class="d-flex flex-column">
+										<h3 class="fs-6 mb-1">Summary:</h3>
+										${disaster.fields['description-html']}(...)
+									</div>
+									<div class="d-flex justify-content-center mt-2">
+										<a class="btn btn-sm" id="wikiLink" href="${disaster.fields.url}" target="_blank" rel="noreferrer" role="button">Go to report</a>
+									</div>`
+						);
+						L.marker([latitude, longitude], {icon: disasterIcon}).addTo(disasterMarkers)
+						.bindPopup(popup, popupOptions);
+					});
+					map.spin(false);
+					map.fitBounds(disasterMarkers.getBounds());
+					btn.state('hide-disasters');
+				}
+			});
+		}
+	}, {
+		stateName: 'hide-disasters',
+		icon: 'fas fa-exclamation-circle fa-lg',
+		title: 'Hide disasters',
+		onClick: function(btn, _map){
+			btn.button.style.backgroundColor = 'white';
+			btn.button.style.color = 'black';
+			DataMarkers.removeLayer(disasterMarkers);
+			btn.state('show-disasters');
+		}
+	}, {
+		stateName: 'show-disasters',
+		icon: 'fas fa-exclamation-circle fa-lg',
+		title: 'Current disasters', 
+		onClick: function(btn, map){
+			btn.button.style.backgroundColor = 'black';
+			btn.button.style.color = 'white';
+			DataMarkers.addLayer(disasterMarkers);
+			btn.state('hide-disasters');
+			map.fitBounds(disasterMarkers.getBounds());
+		}
+	}]			
+});	
+				
+disasterButton.addTo(map);
+
+var cityMarkers = L.markerClusterGroup();
+var oceanMarkers = L.markerClusterGroup();
+var disasterMarkers = L.markerClusterGroup();
+DataMarkers.addLayer(cityMarkers, oceanMarkers);
 
 // Create custom Icons
-var MapIcon = L.Icon.extend({
-	options: {
-		iconSize: [25, 41],
-		iconAnchor: [12, 40],
-		popupAnchor: [0, -42]
-	}
+var userIcon = L.ExtraMarkers.icon({
+	icon: 'fa-crosshairs',
+	markerColor: 'green',
+	shape: 'circle',
+	prefix: 'fas'
+}),
+capitalIcon = L.ExtraMarkers.icon({
+	icon: 'fa-city',
+	markerColor: 'violet',
+	shape: 'star',
+	prefix: 'fas'
+}),
+cityIcon = L.ExtraMarkers.icon({
+	icon: 'fa-city',
+	markerColor: 'yellow',
+	shape: 'circle',
+	prefix: 'fas'
+}),
+oceanIcon = L.ExtraMarkers.icon({
+	icon: 'fa-water',
+	markerColor: 'cyan',
+	shape: 'circle',
+	prefix: 'fas',
+}),
+disasterIcon = L.ExtraMarkers.icon({
+	icon: 'fa-exclamation-circle',
+	markerColor: 'red',
+	shape: 'square',
+	prefix: 'fas'
 });
-var userIcon = new MapIcon({iconUrl: 'images/userMarker.png'}),
-		capitalIcon = new MapIcon({iconUrl: 'images/capitalMarker.png'}),
-		cityIcon = new MapIcon({iconUrl: 'images/cityMarker.png'}),
-		oceanIcon = new MapIcon({iconUrl: 'images/oceanMarker.png'});
+
+const popupOptions = {
+	maxWidth: 250,
+	className: 'customPopup'
+}
 
 // GeoJSON variables
 const geoJsonStyle = {
-	"color": "#85e384",
+	"color": "#d7ceb2",
 	"opacity": 0.8,
 	"weight": 2,
+	"dashArray": '',
+	"fillOpacity": 0.1
 }
 let geoJsonLayer = [];
 
@@ -45,7 +225,7 @@ $.ajax({
 	url: 'php/getCountryList.php',
 	type: 'GET',
 	dataType: 'JSON',
-	error: (jqXHR, textStatus, errorThrown) => {
+	error: (jqXHR, _textStatus, errorThrown) => {
 		console.warn(jqXHR.responseText);
 		console.log(errorThrown);
 	},
@@ -65,7 +245,7 @@ $.ajax({
 	url: 'php/getCurrencyList.php',
 	type: 'GET',
 	dataType: 'JSON',
-	error: (jqXHR, textStatus, errorThrown) => {
+	error: (jqXHR, _textStatus, errorThrown) => {
 		console.warn(jqXHR.responseText);
 		console.log(errorThrown);
 	},
@@ -91,7 +271,8 @@ var formData = {
 	'country': null,
 	'lat': null,
 	'lng': null,
-	'geoLocate': null
+	'geoLocate': null,
+	'dragged': null,
 }
 
 /* Functions */
@@ -113,42 +294,49 @@ function getLocation() {
 		formData.lat = res.coords.latitude;
 		formData.lng = res.coords.longitude;
 		formData.geoLocate = true;
-		L.marker([formData.lat, formData.lng], {icon: userIcon}).addTo(map)
-			.bindPopup('Your location');
+		var popup = L.responsivePopup().setContent(
+			`<div class="d-flex flex-column">
+					<div class="d-flex justify-content-between">
+						<h2>Your Location</h2>
+					</div>
+				</div>`
+		);
+		L.marker([formData.lat, formData.lng], {icon: userIcon}).addTo(DataMarkers)
+			.bindPopup(popup, popupOptions);
 		getCountryCode(formData);
 		setNull(formData);
 	}).catch((err) => {
 		console.error(err.message);
+		map.spin(false);
 		removeLoad();
 	});
 }
 
 function getCountryCode(formData) {
-	// Loading screen on search
-	$("#preloader").attr("style", "display: show !important");
-
 	$.ajax({
 		url: "php/getCountryCode.php",
 		type: 'GET',
 		dataType: 'json',
 		data: formData,
-		error: (jqXHR, textStatus, errorThrown) => {
-			console.log(jqXHR.responseText);
+		error: (jqXHR, _textStatus, errorThrown) => {
+			console.warn(jqXHR.responseText);
 			console.log(errorThrown);
+			map.spin(false);
 			removeLoad();
 		},
-		success: (result) => {	
+		success: (result) => {
 			if (result.status.name == "ok") {
 				countryCode = result.countryCode;
-				if ('status' in countryCode) {
-					formData.lat = result.latitude;
-					formData.lng = result.longitude;
+				requestObj = result.request;
+				if (!countryCode) {
+					formData.lat = requestObj.latitude;
+					formData.lng = requestObj.longitude;
 					getOceanData(formData);
-					
 				} else {
 					formData.iso_a2 = countryCode.countryCode;
 					formData.country = countryCode.countryName;
-					formData.geoLocate = result.geoLocate;
+					formData.geoLocate = requestObj.geoLocate;
+					getGeoJSON(formData);
 					getCountryData(formData);
 				}
 			}
@@ -163,16 +351,85 @@ function getOceanData(formData) {
 		type: 'GET',
 		dataType: 'json',
 		data: formData,
-		error: (jqXHR, textStatus, errorThrown) => {
-			console.log(jqXHR.responseText);
+		error: (jqXHR, _textStatus, errorThrown) => {
+			console.warn(jqXHR.responseText);
 			console.log(errorThrown);
+			map.spin(false); 
 			removeLoad();
 		},
-		success: (result) => {	
+		success: (result) => {
 			if (result.status.name == "ok") {
+				map.spin(false);
 				removeLoad();
-				L.marker([formData.lat, formData.lng], {icon: oceanIcon}).addTo(map)
-					.bindPopup(`<a href=https://${result.geonameId.wikipediaURL} target="_blank">${result.ocean.ocean.name}</a>`).openPopup();
+				if (!result.request.dragged) {
+					DataMarkers.removeLayer(oceanMarkers);
+					oceanMarkers = L.markerClusterGroup();
+					DataMarkers.addLayer(oceanMarkers);
+					var popup = L.responsivePopup().setContent(
+            `<div class="d-flex flex-column">
+								<div class="d-flex justify-content-between">
+									<h2>${result.ocean.asciiName}</h2>
+								</div>
+								<hr class="m-0 mb-2">
+								<div class="d-flex justify-content-center mt-2">
+									<a class="btn btn-sm" id="wikiLink" href="https://${result.ocean.wikipediaURL}" target="_blank" rel="noreferrer" role="button">Go to wiki</a>
+								</div>
+							</div>`
+					);
+					oceanMarker = L.marker([formData.lat, formData.lng], {
+						icon: oceanIcon,
+						draggable: 'true', 
+						autoPan: 'true'}).addTo(oceanMarkers)
+						.bindPopup(popup, popupOptions).openPopup();
+					
+					oceanMarker.on('dragend', function (e) {
+						formData.lat = oceanMarker.getLatLng().lat;
+						formData.lng = oceanMarker.getLatLng().lng;
+						formData.dragged = "true";
+						getOceanData(formData);
+						setNull(formData);
+					});   
+				} else {
+					var popup = L.responsivePopup().setContent(
+						`<div class="d-flex flex-column">
+								<div class="d-flex justify-content-between">
+									<h2>${result.ocean.asciiName}</h2>
+								</div>
+								<hr class="m-0 mb-2">
+								<div class="d-flex justify-content-center mt-2">
+									<a class="btn btn-sm" id="wikiLink" href="https://${result.ocean.wikipediaURL}" target="_blank" rel="noreferrer" role="button">Go to wiki</a>
+								</div>
+							</div>`
+					);
+					oceanMarker.bindPopup(popup, popupOptions).openPopup();
+				}
+			}
+		}
+	});
+}
+
+// Get country border
+function getGeoJSON(formData) {
+	$.ajax({
+		url: "php/getCountryBorder.php",
+		type: 'GET',
+		dataType: 'json',
+		data: formData,
+		error: (jqXHR, _textStatus, errorThrown) => {
+			console.warn(jqXHR.responseText);
+			console.log(errorThrown);
+			map.spin(false);
+			removeLoad();
+		},
+		success: (result) => {
+			if (result.status.name == "ok") {
+				if(geoJsonLayer){
+					map.removeLayer(geoJsonLayer);
+				}
+				geoJsonLayer = L.geoJson(result['geoJson'], {
+					style: geoJsonStyle
+				}).addTo(map);
+				map.fitBounds(geoJsonLayer.getBounds());
 			}
 		}
 	});
@@ -180,50 +437,54 @@ function getOceanData(formData) {
 
 // Get country data
 function getCountryData(formData) {
-	// Loading screen on search
-	$("#preloader").attr("style", "display: flex !important");
-
 	$.ajax({
 		url: "php/getCountry.php",
 		type: 'GET',
 		dataType: 'json',
 		data: formData,
-		error: (jqXHR, textStatus, errorThrown) => {
-			console.log(jqXHR.responseText);
+		error: (jqXHR, _textStatus, errorThrown) => {
+			console.warn(jqXHR.responseText);
 			console.log(errorThrown);
+			map.spin(false);
 			removeLoad();
 		},
 		success: (result) => {
 			if (result.status.name == "ok") {
-				document.getElementById('country-dropdown').value = result['countryCode'];
-				createGeoJson(result['geoJson']);
+				const countryData = result.countryData;
+				$('#country-dropdown').val(countryData['countryCode']);
 
-				// Geonames data
-				const geonamesInfo = result.countryInfo.geonames[0];
-				$('.country-name').html(`${geonamesInfo['countryName']}, ${result['countryCode']}`);
-				$('#capital').html(geonamesInfo['capital']);
-				$('#population').html(numberWithCommas(geonamesInfo['population']));
-				$('#area').html(numberWithCommas(geonamesInfo['areaInSqKm']));
-
-				const geonamesWiki = result.geonamesWiki.geonames.filter(item => item.title.includes(geonamesInfo['countryName']) || item.feature == "country")[0];
-				$('#countrySummary').html(geonamesWiki.summary);
-				$('#wikiLink').attr("href", "https://" + geonamesWiki.wikipediaUrl);
-			
-				// RestCountries 
-				const restCountries = result.restCountries;
+				// Country Information
+				$('#country-name').html(`${countryData['countryName']}, ${countryData['countryCode']}`);
+				$('.capital').html(countryData['capital']);
+				$('#population').html(numberWithCommas(countryData['population']));
+				$('#area').html(numberWithCommas(countryData['areaInSqKm']));
+				$('#countrySummary').html(countryData['wikiSummary']);
+				$('#wikiLink').attr("href", "https://" + countryData['wikipediaUrl']);
 				$('.flag').attr({
-					src: restCountries.flag,
-					alt: `The national flag of ${restCountries.name}`
+					src: countryData.flag,
+					alt: `The national flag of ${countryData['countryName']}`
 				});
-				$('#region').html(restCountries.region);
-				$('#subregion').html(restCountries.subregion);
-				$('#language').html(restCountries.languages[0].name);
-				const currency = restCountries.currencies[0];
-				$('#currencyName').html(currency.name);
-				$('#currencySymbol').html(`(${currency.symbol})`);
+				$('#region').html(countryData.region);
+				$('#subregion').html(countryData.subregion);
+				$('#language').html(countryData.language);
+				$('#currencyName').html(countryData.currencyName);
+				$('#currencySymbol').html(`(${countryData.currencySymbol})`);
+
+				// Update currency dropdown selection
+				if (typeof countryData.currencyCode !== "undefined") {
+					if (result.request.geoLocate) {
+						$('#fromCurrency').val(countryData.currencyCode);
+					} else {
+						$('#toCurrency').val(countryData.currencyCode);
+						$('#exchangeResult').html("");
+					}
+				} else {
+					const currencyDropdown = $('.currency-dropdown');
+					currencyDropdown.prop('selectedIndex', 0);
+				}
 
 				// Open Weather Data
-				var openWeather = result.openWeather.daily;
+				var openWeather = result.openWeather;
 				for (let i = 0; i < 4; i++) {
 					tempMax = kelvinToCelsius(openWeather[i].temp.max);
 					tempMin = kelvinToCelsius(openWeather[i].temp.min);
@@ -248,59 +509,14 @@ function getCountryData(formData) {
 					);
 				}
 
-				// Geonames Cities Data
-				if (!result.geonamesCities.status) {
-					const geoCities = result.geonamesCities.geonames.filter(item => item.countrycode.includes(result['countryCode']));
-					let cities = geoCities.length;
-					if (cities > 10) {
-						cities = 10;	
-					}
-					for (let i = 0; i < cities; i++) {
-						if (geoCities[i].fcode == "PPLC") {
-							L.marker([geoCities[i].lat, geoCities[i].lng], {icon: capitalIcon}).addTo(map)
-							.bindPopup(
-								`<h5><a href=https://${geoCities[i].wikipedia} target="_blank">${geoCities[i].name}</a> - Capital</h3>
-								<strong>Population:</strong> ${geoCities[i].population}`
-							);	
-						} else {
-							L.marker([geoCities[i].lat, geoCities[i].lng], {icon: cityIcon}).addTo(map)
-							.bindPopup(
-								`<h5><a href=https://${geoCities[i].wikipedia} target="_blank">${geoCities[i].name}</a></h3>
-								<strong>Population:</strong> ${geoCities[i].population}`
-							);
-						}
-					}
-				}
-
-				// Update currency dropdown selection
-				if (typeof currency !== "undefined") {
-					if (result.geoLocate) {
-						$('#fromCurrency').val(currency.code);
-					} else {
-						$('#toCurrency').val(currency.code);
-						$('#exchangeResult').html("");
-					}
-				} else {
-					currencyDropdown.prop('selectedIndex', 0);
-				}
-
 				// Remove Loader
+				map.spin(false);
 				removeLoad();
 				showData();
+				getCities(countryData['countryCode'], countryData['capital']);
 			}
 		}
 	});
-}
-
-// Render country border
-function createGeoJson(geoJson) {
-	if(geoJsonLayer){
-			map.removeLayer(geoJsonLayer);
-	}
-	geoJsonLayer = L.geoJson(geoJson, {
-			style: geoJsonStyle
-	}).addTo(map);
-	map.fitBounds(geoJsonLayer.getBounds());
 }
 
 // Show offcanvas element
@@ -308,6 +524,41 @@ function showData() {
 	const offCanvasBottom = document.getElementById("offcanvasBottom");
 	const dataOffCanvas = new bootstrap.Offcanvas(offCanvasBottom);
 	dataOffCanvas.show();
+}
+
+//Get cities within country
+function getCities(countryCode, capital){
+	formData.iso_a2 = countryCode;
+	$.ajax({
+		url: "php/getCities.php",
+		type: 'GET',
+		dataType: 'json',
+		data: formData,
+		error: (jqXHR, _textStatus, errorThrown) => {
+			console.warn(jqXHR.responseText);
+			console.log(errorThrown);
+			map.spin(false);
+			removeLoad();
+		},
+		success: (result) => {
+			DataMarkers.removeLayer(cityMarkers);
+			console.log(result);
+			// Geonames Cities Data
+			cityMarkers = L.markerClusterGroup();
+			DataMarkers.addLayer(cityMarkers);
+			result.data.forEach(item => {
+				if (capital == item.city) {
+					L.marker([item.latitude, item.longitude], {icon: capitalIcon})
+					.on('click', cityOnClick)
+					.addTo(DataMarkers)
+				} else {
+					L.marker([item.latitude, item.longitude], {icon: cityIcon})
+					.on('click', cityOnClick)
+					.addTo(cityMarkers)
+				}
+			});
+		}
+	});
 }
 
 // Set object key values to null
@@ -346,8 +597,9 @@ function getCurrencyExchange() {
 			url: "php/getExchange.php",
 			type: 'GET',
 			dataType: 'json',
-			error: (jqXHR, textStatus, errorThrown) => {
-				console.log(jqXHR.responseText);
+			error: (jqXHR, _textStatus, errorThrown) => {
+				map.spin(false);
+				console.warn(jqXHR.responseText);
 				console.log(errorThrown);
 			},
 			success: (result) => {
@@ -358,22 +610,89 @@ function getCurrencyExchange() {
 				toRate = result.exchangeRates[toCurrency];
 				exchanged = Number.parseFloat(amountUSD * toRate).toFixed(2);
 				// Generate result
+				map.spin(false);
 				$.getJSON('json/currencies.json', function(currencies) {
 					currency = currencies.find(o => o.cc === toCurrency);
 					$('#toCurrencySymbol').html(currency.symbol);
 				});
-				$('#exchangeResultH').html("Result:") 
+				$('#exchangeResultH').html("Result:");
 				$('#exchangeResult').html(`<span id="toCurrencySymbol"></span>
 				<span class="ms-2" id="exchangeRecieved"></span>${numberWithCommas(exchanged)}`);
-				
 			}
 			// Consider decimal place variable as not all currencies use decimal notation e.g. Albanian Lek
 		});
 	} else {
+		map.spin(false);
 		$('#exchangeResultH').html("Result:")
 		$('#exchangeResult').html("Form incomplete")
 	}
 } 
+
+function cityOnClick(e) {
+	if (!this._popup) {
+		formData.lat = e.latlng.lat;
+		formData.lng = e.latlng.lng;
+		$.ajax({
+			url: "php/getCityData.php",
+			type: 'GET',
+			dataType: 'json',
+			data: formData,
+			error: (jqXHR, _textStatus, errorThrown) => {
+				map.spin(false);
+				console.warn(jqXHR.responseText);
+				console.log(errorThrown);
+				alert("Ohh no, there is no city data available for this location.");
+			},
+			success: (result) => {
+				console.log(result);
+				var popup = L.responsivePopup().setContent(
+					`<div class="d-flex flex-column">
+						<div class="d-flex justify-content-between">
+							<h2>${result.cityData.cityName}</h2>
+						</div>
+						<hr class="m-0 mb-2">
+						<h3 class="fs-6 m-0">Location:</h3>
+						<div class="d-flex justify-content-between mb-1">
+							<span class="fs-6 m-0">Latitude:</span><span class="fs-6">${result.cityData.wikipedia.lat}</span>
+							<span class="fs-6 m-0">Longitude:</span><span class="fs-6">${result.cityData.wikipedia.lng}</span>
+						</div>
+						<h3 class="fs-6 mb-1">Summary:</h3>
+						<div class="d-flex flex-column">
+								<p class="mb-0">${result.cityData.wikipedia.summary}</p>
+						</div>
+						<div class="d-flex justify-content-center my-2">
+							<a class="btn btn-sm" id="wikiLink" href="https://${result.cityData.wikipedia.wikipediaUrl}" target="_blank" rel="noreferrer" role="button">Go to wiki</a>
+						</div>
+						<hr class="m-0 mb-2">
+						<div class="d-flex flex-column">
+								<h3 class="fs-6 mb-1">Popular locations:</h3>
+								<section id="venues">
+								<div class="">
+									${result.cityData.foursquare[0]}
+								</div>
+								<div class="">
+									${result.cityData.foursquare[1]}
+								</div>
+								<div class="">
+									${result.cityData.foursquare[2]}
+								</div>
+								<div class="">
+									${result.cityData.foursquare[3]}
+								</div>
+								<div class="">
+									${result.cityData.foursquare[4]}
+								</div>
+								</section>
+						</div>	
+					</div>`
+				);
+				this.bindPopup(popup, popupOptions).openPopup();
+				map.spin(false);
+			}
+		});
+	}
+}
+
 
 // Events
 // Get user position and country data when document ready
@@ -381,10 +700,13 @@ $(document).ready(() => {
 	getLocation();
 });
 
-
-// Remove landing page
-$('#continueToApp').on('click', () => {
-	$('#landingPage').attr("style", "display: none !important");
+$(document).ajaxStart(() => {
+	map.spin(true, {
+		lines: 10, length: 0,	width: 10, radius: 20, corners: 1,
+		speed: .75,	color: '#d7ceb2', fadeColor: '#2c2e38', 
+		shadow: '3px 3px 0px #2c2e38, 5px 5px 0px #5c5f72', 
+		zIndex: 9990, className: 'spinner',
+	});
 });
 
 // Select country by map click
@@ -401,6 +723,7 @@ $('#country-dropdown').on('change', () => {
 	formData.country = $('#country-dropdown option:selected').text();
 	formData.iso_a2 = $('#country-dropdown').val();
 	formData.geoLocate = null;
+	getGeoJSON(formData);
 	getCountryData(formData);
 	setNull(formData);
 });
@@ -416,7 +739,7 @@ $('#currencySwap').on('click', () => {
 		$(this).removeClass("imageRot");
 		let newToCurrency = $('#fromCurrency option:selected').val();
 		let newFromCurrency = $('#toCurrency option:selected').val();
-		document.getElementById("toCurrency").value = newToCurrency;
-		document.getElementById("fromCurrency").value = newFromCurrency;
+		$("#toCurrency").val(newToCurrency);
+		$("#fromCurrency").val(newFromCurrency);
 	})
 });

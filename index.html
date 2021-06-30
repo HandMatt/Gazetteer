@@ -13,6 +13,10 @@
     <!-- Stylesheets -->
     <link rel="stylesheet" href="vendors/bootstrap/bootstrap.min.css">
     <link rel="stylesheet" href="vendors/leaflet/leaflet.css" type="text/css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+    <link rel="stylesheet" href="vendors/leaflet/leaflet.extra-markers.min.css">
+    <link rel="stylesheet" href="vendors/leaflet/MarkerCluster.css">
+    <link rel="stylesheet" href="vendors/leaflet/MarkerCluster.default.css">
     <link rel="stylesheet" href="css/style.css" type="text/css">
     <!-- Font Awsome -->
     <script src="https://kit.fontawesome.com/a9ec706d89.js" crossorigin="anonymous"></script>
@@ -39,9 +43,8 @@
     <!-- Interactive Map-->
     <div class="w-100 h-100" id="map"></div>
 
-    <button class="btn col-md-6 col-lg-4 col-xl-3 m-0" id="showDataBtn" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom" aria-controls="offcanvasBottom">Country Data</button>
     <!-- Modal Display -->
-    <div class="offcanvas offcanvas-bottom container-sm col-md-6 col-lg-4 col-xl-3 m-0" tabindex="-1" id="offcanvasBottom" aria-labelledby="showDataBtn">
+    <div class="offcanvas offcanvas-bottom container-sm col-md-6 col-lg-4 col-xxl-3 m-0" tabindex="-1" id="offcanvasBottom">
       <div class="p-0">
         <!-- Modal Nav -->
         <ul class="nav nav-tabs nav-justified" id="myTab" role="tablist">
@@ -63,7 +66,7 @@
           <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
             <div class="d-flex flex-column">
               <div class="d-flex justify-content-between mb-1">
-                <h2 class="country-name"></h2>
+                <h2 id="country-name"></h2>
                 <img class="flag">
               </div>
               <hr class="m-0 mb-2">
@@ -81,7 +84,7 @@
               </div>
               <div class="d-flex justify-content-between mb-1">
                 <h3 class="fs-6 m-0">Capital City:</h3>
-                <span id="capital"></span>
+                <span class="capital"></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
                 <h3 class="fs-6 m-0">Country Population:</h3>
@@ -100,7 +103,7 @@
                 <p id="countrySummary"></p>
               </div>
               <div class="d-flex justify-content-center pt-3">
-                <a class="btn btn-sm w-50" id="wikiLink" href="#" target="_blank" rel="noreferrer" role="button">Learn more!</a>
+                <a class="btn btn-sm w-50" id="wikiLink" href="#" target="_blank" rel="noreferrer" role="button">Go to wiki</a>
               </div> 
             </div>
           </div>
@@ -109,7 +112,7 @@
           <div class="tab-pane fade" id="weather" role="tabpanel" aria-labelledby="weather-tab">
             <div class="d-flex flex-column">
               <div class="d-flex justify-content-between mb-1">
-                <h2 class="country-name"></h2>
+                <h2 class="capital"></h2>
                 <img class="flag">
               </div>
               <hr class="m-0 mb-2">
@@ -189,24 +192,23 @@
         </div>
       </div>
     </div>
-
-    <div id="landingPage" class="d-flex flex-column justify-content-center align-items-center">
-      <h1 class="display-1 mb-3">
-        <i class="fas fa-atlas"></i> Gazetteer <i class="fas fa-atlas"></i>
-      </h1>
-      <p class="text-center">Welcome to Gazetteer! Worldwide data is available just a click away!<br/>
-      Gazetteer works best when you allow location services.</p>
-      <div class="d-flex flex-column justify-content-center">
-        <button class="btn" id="continueToApp">Continue to app</button>
-      </div>
-    </div>
     
     <div id="preloader"><p>...Loading...</p></div>
-    
-    <script type="application/javascript" src="vendors/jquery/jquery.min.js"></script>
-    <script type="application/javascript" src="vendors/bootstrap/bootstrap.bundle.min.js"></script>
-    <script type="application/javascript" src="vendors/leaflet/leaflet.js"></script>
-    <script type="application/javascript" src="js/script.js"></script>
+
+    <script type="application/javascript" src="vendors/jquery/jquery.min.js" charset="utf-8"></script>
+    <script type="application/javascript" src="vendors/bootstrap/bootstrap.bundle.min.js" charset="utf-8"></script>
+    <script type="application/javascript" src="vendors/leaflet/leaflet.js" charset="utf-8"></script>
+    <script type="application/javascript" src="vendors/leaflet/leaflet-providers.js" charset="utf-8"></script>
+    <script type="application/javascript" src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js" charset="utf-8"></script>
+    <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.js" charset="utf-8"></script>
+    <script type="application/javascript" src="vendors/leaflet/leaflet.spin.min.js" charset="utf-8"></script>
+    <script type="application/javascript" src="vendors/leaflet/leaflet.extra-markers.min.js" charset="utf-8"></script>
+    <script type="application/javascript" src="vendors/leaflet/leaflet.markercluster-src.js" charset="utf-8"></script>
+    <script src="https://unpkg.com/leaflet-responsive-popup@0.6.4/leaflet.responsive.popup.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-responsive-popup@0.6.4/leaflet.responsive.popup.css" />
+
+
+    <script type="application/javascript" src="js/script.js" charset="utf-8"></script>
     
   </body>
 </html>
@@ -214,16 +216,23 @@
 <!-- To do List -->
 <!--
   *** Presentation ***
+    * Leaflet.easyButton:
+      - Weather button on hover displays overlay options
+      - Disasters:
+        - Present data visually appealing
+          - another modal display?
+        - Format date for display
+        - Learn more should be a button
+      - Webcams
 
-  *** UX ***
+  *** UX ***    
 
   *** Performance ***
-    * Reduce latency on getCountry.php routine, possibly split and call with async functions
     * Analyse Lighthouse report
 
   *** Features ***
-    * Map display settings, removing markers, different tiles
-    * Add weather and environmental data overlays to map
-    * Implement ISS tracker, (main functions already built)
--->
+    * Identify more (5-8) APIS for geographic and non-geographic data: news, images, covid, national holidays, webcams.
 
+
+* Review specification 
+-->

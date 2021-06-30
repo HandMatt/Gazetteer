@@ -31,10 +31,13 @@
   $output['status']['name'] = "ok";
   $output['status']['description'] = "Country data retrieved";
   $output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-  $output['countryCode'] = $countryCodeResult;
-  $output['geoLocate'] = $geoLocate;
-  $output['latitude'] =  $_REQUEST['lat'];
-  $output['longitude'] = $_REQUEST['lng'];
+  if(array_key_exists("countryCode", $countryCodeResult)){
+    $output['countryCode']['countryCode'] = $countryCodeResult['countryCode'];
+    $output['countryCode']['countryName'] = $countryCodeResult['countryName'];
+  }
+  $output['request']['geoLocate'] = $geoLocate;
+  $output['request']['latitude'] =  $_REQUEST['lat'];
+  $output['request']['longitude'] = $_REQUEST['lng'];
 
   header('Content-Type: application/json; charset=UTF-8');
   echo json_encode($output); 

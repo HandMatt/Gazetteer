@@ -9,8 +9,8 @@
         array_push($countries, $country);
     }
 
-    usort($countries, function ($item1, $item2) { 
-        return $item1['name'] <=> $item2['name'];
+    usort($countries, function ($country1, $country2) { 
+        return $country1['name'] <=> $country2['name'];
     });
 
     $output['status']['code'] = "200";

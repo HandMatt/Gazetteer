@@ -20,7 +20,7 @@
   background: #3f6379;
 }
 #preloader {
-  z-index: 9990;
+  z-index: 9999;
 }
   #preloader:before {
     content: "";
@@ -112,6 +112,25 @@ body {
   min-width: 110px;
 }
 
+/*Custom Popups*/
+.customPopup .leaflet-popup-content-wrapper {
+  background-color: #3f6379;
+  color:white;
+  border-radius: .25rem;
+  border-bottom: 0;
+  font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+}
+.leaflet-popup-content-wrapper > div > div > div:nth-child(1) > h2 {
+  font-family: Cochin, Georgia, Times, 'Times New Roman', serif;
+}
+.customPopup .leaflet-popup-tip {
+  background-color: #3f6379;
+}
+.leaflet-popup-content-wrapper > div > div > div.d-flex.flex-column > p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
 /*Offcanvas*/
 .offcanvas-backdrop::before {
   background-color: #3f637946 !important;
@@ -123,8 +142,8 @@ body {
   opacity: 0.90;
 }
 .offcanvas-body {
+  border-radius: 0 0 .25rem .25rem;
   background-color: #3f6379;
-  margin-bottom: 38px;
 }
 #showDataBtn {
   z-index: 1041;
@@ -142,21 +161,8 @@ body {
   border: none;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f1f1; 
-}
-::-webkit-scrollbar-thumb {
-  background: #888; 
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #555; 
-}
-
-.country-name {
+#country-name,
+h2.capital {
   font-family: Cochin, Georgia, Times, 'Times New Roman', serif;
 }
 .flag {
@@ -165,7 +171,8 @@ body {
 }
 #info > div > div:nth-child(even),
 .day > div > div > div:nth-child(even),
-#exchangeResult {
+#exchangeResult,
+.leaflet-popup-content-wrapper > div > div > div:nth-child(even) {
   background-color: #5c5f72;
 }
 #countrySummary {
@@ -194,4 +201,27 @@ body {
 }
 @keyframes spin { 
    100% { -webkit-transform: rotate(270deg); transform:rotate(270deg); } 
+}
+
+/* City popup */
+.leaflet-popup-content-wrapper {
+  max-height: 375px;
+  overflow-y: auto;
+}
+.customPopup > a.leaflet-popup-close-button {
+  right: 10px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+  background: #888; 
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555; 
 }
