@@ -50,6 +50,9 @@
     });
     $geonamesWiki = reset($geonamesWikiFiltered);
   }
+  $wikiLink = "<a href='https://".$geonamesWiki['wikipediaUrl']."' target='_blank' rel='noreferrer'>more</a>";
+  $wikiSummary = str_replace("...", $wikiLink, $geonamesWiki['summary']);
+
 
   // Gets capital city info using GeoNames
   $geonamesSearchUrl = "http://api.geonames.org/searchJSON?q=" . $countryData['capital'] . "," . $iso_2 . "&maxRows=10&username=" . $geonamesUsername;
@@ -71,9 +74,8 @@
     $longitude = $restCountriesResult['latlng'][1];
   }
 
-
   // Gets weather data from OpenWeather
-  $openWeatherUrl = "https://api.openweathermap.org/data/2.5/onecall?lat=".$latitude."&lon=" . $longitude . "&exclude=minutely,hourly,alerts&appid=" . $openWeatherKey;
+  $openWeatherUrl = "https://api.openweathermap.org/data/2.5/onecall?lat=".$latitude."&lon=" . $longitude . "&exclude=current,minutely,hourly,alerts&appid=" . $openWeatherKey;
   curl_setopt($ch, CURLOPT_URL,$openWeatherUrl);
   $openWeatherResponse = curl_exec($ch);
   $openWeatherResult = json_decode($openWeatherResponse, true);
@@ -84,16 +86,17 @@
     unset($day['dt']);
     unset($day['feels_like']);
     unset($day['humidity']);
+    unset($day['sunset']);
+    unset($day['sunrise']);
     unset($day['moon_phase']);
+    unset($day['uvi']);
+    unset($day['rain']);
     unset($day['moonrise']);
     unset($day['moonset']);
     unset($day['moonset']);
     unset($day['pop']);
     unset($day['pressure']);
-    unset($day['sunrise']);
-    unset($day['sunset']);
     unset($day['pop']);
-    unset($day['uvi']);
     unset($day['wind_gust']);
     unset($day['temp']['day']);
     unset($day['temp']['eve']);
@@ -101,7 +104,48 @@
     unset($day['temp']['night']);
   }
 
+  $newsApiUrl = "https://newsapi.org/v2/top-headlines?country=".$iso_2."&apiKey=".$newsApiKey;
+  curl_setopt($ch, CURLOPT_URL, $newsApiUrl);
+  $newsApiResponse = curl_exec($ch);
+  $newsApiResult = json_decode($newsApiResponse, true);
+  $newsApiFiltered = array_slice($newsApiResult['articles'], 0, 5);
+  $newsTableHtml = "";
+  if (count($newsApiFiltered) == 0) {
+    $newsTableHtml = "<span class='mb-1'>Currently unavailable</span>";
+  } else {
+    foreach ($newsApiFiltered as $article) {
+      if ($article['urlToImage'] == null) {
+        $article['urlToImage'] = "./images/no-image-found-360x250.png";
+      }
+      $newsArticleHtml = 
+      "<div class='d-flex flex-row mb-2'>
+        <img src=".$article['urlToImage']." class='me-1' width='45%'/>
+        <div>
+          <a href=".$article['url']." target='_blank'><h3 class='fs-6'>".$article['title']."</h3></a>
+        </div>
+      </div>";
+      $newsTableHtml = $newsTableHtml.$newsArticleHtml;
+    }
+  }
+
   curl_close($ch);
+
+  // Convert population to EngNotation
+  if ($countryData['population'] < 1000) {
+    $population = $countryData['population'];
+  } else if ($countryData['population'] < 1000000) {
+    $popNumber = $countryData['population'] / 1000;
+    $popRound = round($popNumber, 1);
+    $population = $popRound . "K";
+  } else if ($countryData['population'] < 1000000000) {
+    $popNumber = $countryData['population'] / 1000000;
+    $popRound = round($popNumber, 1);
+    $population = $popRound . "M";
+  } else if ($countryData['population'] < 1000000000000) {
+    $popNumber = $countryData['population'] / 1000000000;
+    $popRound = round($popNumber, 1);
+    $population = $popRound . "B";
+  }
 
   // Final output
   $output['status']['code'] = "200";
@@ -113,11 +157,10 @@
   $output['countryData']['countryCode'] = $iso_2;
   $output['countryData']['countryName'] = $countryData['countryName'];
   $output['countryData']['capital'] = $countryData['capital'];
-  $output['countryData']['population'] = $countryData['population'];
+  $output['countryData']['population'] = $population;
   $output['countryData']['areaInSqKm'] = $countryData['areaInSqKm'];
   if ($geonamesWiki) {
-    $output['countryData']['wikiSummary'] = $geonamesWiki['summary'];
-    $output['countryData']['wikipediaUrl'] = $geonamesWiki['wikipediaUrl'];
+    $output['countryData']['wikiSummary'] = $wikiSummary;
   } else {
     $output['geonamesWiki'] = $geonamesWikiResult;
   }
@@ -128,14 +171,10 @@
   $output['countryData']['currencyName'] = $restCountriesResult['currencies'][0]['name'];
   $output['countryData']['currencySymbol'] = $restCountriesResult['currencies'][0]['symbol'];
   $output['countryData']['currencyCode'] = $restCountriesResult['currencies'][0]['code'];
-
+  $output['countryData']['newsArticles'] = $newsTableHtml;
+  
   //Weather Data Object
   $output['openWeather'] = $fourDayForecast;
-  
-  //Testing
-  //$output['countryInfo'] = $countryInfoResult;
-  //$output['restCountries'] = $restCountriesResult;
-  //$output['countryDataTest'] = $countryData;
 
   header('Content-Type: application/json; charset=UTF-8');
   echo json_encode($output);

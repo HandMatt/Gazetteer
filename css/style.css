@@ -75,6 +75,12 @@ body {
   color: white;
   background-color: #3f6379;
 }
+a {
+  color: white;
+}
+a:hover {
+  color: #d7ceb2;
+}
 
 #appLogo,
 #landingPage > h1 {

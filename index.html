@@ -71,40 +71,42 @@
               </div>
               <hr class="m-0 mb-2">
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Region:</h3>
+                <h3 class="fs-6 m-0">Region</h3>
                 <span id="region"></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Subregion:</h3>
+                <h3 class="fs-6 m-0">Subregion</h3>
                 <span id="subregion"></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Primary language:</h3>
+                <h3 class="fs-6 m-0">Primary language</h3>
                 <span id="language"></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Capital City:</h3>
+                <h3 class="fs-6 m-0">Capital City</h3>
                 <span class="capital"></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Country Population:</h3>
+                <h3 class="fs-6 m-0">Country Population</h3>
                 <span id="population"></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Area:</h3>
+                <h3 class="fs-6 m-0">Area</h3>
                 <span><span id="area"></span>km<sup>2</sup></span>
               </div>
               <div class="d-flex justify-content-between mb-1">
-                <h3 class="fs-6 m-0">Currency:</h3>
+                <h3 class="fs-6 m-0">Currency</h3>
                 <span><span id="currencyName"></span> <span id="currencySymbol"></span></span> 
               </div>
-              <div class="d-flex flex-column">
-                <h3 class="fs-6 mb-1">Summary:</h3>
-                <p id="countrySummary"></p>
+              <div class="d-flex flex-column mb-1">
+                <h3 class="fs-6 mb-1">Summary</h3>
+                <p class="mb-1" id="countrySummary"></p>
               </div>
-              <div class="d-flex justify-content-center pt-3">
-                <a class="btn btn-sm w-50" id="wikiLink" href="#" target="_blank" rel="noreferrer" role="button">Go to wiki</a>
-              </div> 
+              <div class="d-flex flex-column">
+                <h3 class="fs-6 mb-1">Top News Stories</h3>
+                <div class="d-flex flex-column" id="newsTable">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -193,7 +195,7 @@
       </div>
     </div>
     
-    <div id="preloader"><p>...Loading...</p></div>
+    <div id="preloader"></div>
 
     <script type="application/javascript" src="vendors/jquery/jquery.min.js" charset="utf-8"></script>
     <script type="application/javascript" src="vendors/bootstrap/bootstrap.bundle.min.js" charset="utf-8"></script>
@@ -212,27 +214,3 @@
     
   </body>
 </html>
-
-<!-- To do List -->
-<!--
-  *** Presentation ***
-    * Leaflet.easyButton:
-      - Weather button on hover displays overlay options
-      - Disasters:
-        - Present data visually appealing
-          - another modal display?
-        - Format date for display
-        - Learn more should be a button
-      - Webcams
-
-  *** UX ***    
-
-  *** Performance ***
-    * Analyse Lighthouse report
-
-  *** Features ***
-    * Identify more (5-8) APIS for geographic and non-geographic data: news, images, covid, national holidays, webcams.
-
-
-* Review specification 
--->

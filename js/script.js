@@ -34,7 +34,7 @@ var overlays = {
 	"Map Labels": Stamen_Labels,
 	"Hiking trails": WaymarkedTrails_hiking, 
 	"Cycle trails": WaymarkedTrails_cycling,
-	"Markers": DataMarkers,
+	"City Markers": DataMarkers,
 	"Clouds": OpenWeatherMap_Clouds,
 	"Pressure": OpenWeatherMap_Pressure,
 	"Wind": OpenWeatherMap_Wind 
@@ -173,13 +173,7 @@ var disasterMarkers = L.markerClusterGroup();
 DataMarkers.addLayer(cityMarkers, oceanMarkers);
 
 // Create custom Icons
-var userIcon = L.ExtraMarkers.icon({
-	icon: 'fa-crosshairs',
-	markerColor: 'green',
-	shape: 'circle',
-	prefix: 'fas'
-}),
-capitalIcon = L.ExtraMarkers.icon({
+var capitalIcon = L.ExtraMarkers.icon({
 	icon: 'fa-city',
 	markerColor: 'violet',
 	shape: 'star',
@@ -294,15 +288,6 @@ function getLocation() {
 		formData.lat = res.coords.latitude;
 		formData.lng = res.coords.longitude;
 		formData.geoLocate = true;
-		var popup = L.responsivePopup().setContent(
-			`<div class="d-flex flex-column">
-					<div class="d-flex justify-content-between">
-						<h2>Your Location</h2>
-					</div>
-				</div>`
-		);
-		L.marker([formData.lat, formData.lng], {icon: userIcon}).addTo(DataMarkers)
-			.bindPopup(popup, popupOptions);
 		getCountryCode(formData);
 		setNull(formData);
 	}).catch((err) => {
@@ -456,7 +441,7 @@ function getCountryData(formData) {
 				// Country Information
 				$('#country-name').html(`${countryData['countryName']}, ${countryData['countryCode']}`);
 				$('.capital').html(countryData['capital']);
-				$('#population').html(numberWithCommas(countryData['population']));
+				$('#population').html(countryData['population']);
 				$('#area').html(numberWithCommas(countryData['areaInSqKm']));
 				$('#countrySummary').html(countryData['wikiSummary']);
 				$('#wikiLink').attr("href", "https://" + countryData['wikipediaUrl']);
@@ -492,22 +477,23 @@ function getCountryData(formData) {
 					windDirection = openWeather[i].wind_deg;
 					weatherIcon = openWeather[i].weather[0].icon;
 					weatherDescription = openWeather[i].weather[0].description;
+					sunrise = openWeather[i].sunrise;
+					sunset = openWeather[i].sunset;
 					$('#day'+(i+1)).children().eq(1).children().eq(0).attr('src', `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`);
 					$('#day'+(i+1)).children().eq(1).children().eq(1).html(
-					 `<div class="d-flex justify-content-between">
-              <h3 class="fs-6 m-0">High:</h3><span>${String(tempMax)+"℃"}</span>
+					 `<div class="d-flex justify-content-center">
+              <span>${String(tempMax)}-${String(tempMin)+"℃"} </span>
             </div>
-            <div class="d-flex justify-content-between">
-              <h3 class="fs-6 m-0">Low:</h3><span>${String(tempMin)+"℃"}</span>
-            </div>
-						<div class="d-flex justify-content-between">
-              <h3 class="fs-6 m-0">Wind:</h3><span>${windSpeed}m/s, <i class="fas fa-arrow-up" style="-webkit-transform:rotate(${windDirection}deg); transform:rotate(${windDirection}deg);"></i></i></span>
-            </div>
-						<div class="d-flex justify-content-between">
-              <h3 class="fs-6 m-0">Weather:</h3><span>${weatherDescription}</span>
+						<div class="d-flex justify-content-center">
+              <span>${Math.round(windSpeed * 3.6)} km/h, <i class="fas fa-arrow-up" style="-webkit-transform:rotate(${windDirection}deg); transform:rotate(${windDirection}deg);"></i></i></span>
+						</div>
+						<div class="d-flex justify-content-center">
+              <span>${weatherDescription}</span>
             </div>`
 					);
 				}
+
+				$('#newsTable').html(countryData.newsArticles);
 
 				// Remove Loader
 				map.spin(false);
@@ -542,7 +528,6 @@ function getCities(countryCode, capital){
 		},
 		success: (result) => {
 			DataMarkers.removeLayer(cityMarkers);
-			console.log(result);
 			// Geonames Cities Data
 			cityMarkers = L.markerClusterGroup();
 			DataMarkers.addLayer(cityMarkers);
@@ -550,7 +535,7 @@ function getCities(countryCode, capital){
 				if (capital == item.city) {
 					L.marker([item.latitude, item.longitude], {icon: capitalIcon})
 					.on('click', cityOnClick)
-					.addTo(DataMarkers)
+					.addTo(cityMarkers)
 				} else {
 					L.marker([item.latitude, item.longitude], {icon: cityIcon})
 					.on('click', cityOnClick)
@@ -641,51 +626,56 @@ function cityOnClick(e) {
 				map.spin(false);
 				console.warn(jqXHR.responseText);
 				console.log(errorThrown);
-				alert("Ohh no, there is no city data available for this location.");
 			},
 			success: (result) => {
-				console.log(result);
-				var popup = L.responsivePopup().setContent(
-					`<div class="d-flex flex-column">
+				var cityInformation = 
+				`<div class="d-flex flex-column">
 						<div class="d-flex justify-content-between">
 							<h2>${result.cityData.cityName}</h2>
 						</div>
 						<hr class="m-0 mb-2">
-						<h3 class="fs-6 m-0">Location:</h3>
+						<h3 class="fs-6 m-0">Location</h3>
 						<div class="d-flex justify-content-between mb-1">
-							<span class="fs-6 m-0">Latitude:</span><span class="fs-6">${result.cityData.wikipedia.lat}</span>
-							<span class="fs-6 m-0">Longitude:</span><span class="fs-6">${result.cityData.wikipedia.lng}</span>
+							<span class="fs-6 m-0">Lat</span><span class="fs-6">${result.cityData.wikipedia.lat}</span>
+							<span class="fs-6 m-0">Lng</span><span class="fs-6">${result.cityData.wikipedia.lng}</span>
 						</div>
-						<h3 class="fs-6 mb-1">Summary:</h3>
+						<h3 class="fs-6 mb-1">Summary</h3>
 						<div class="d-flex flex-column">
-								<p class="mb-0">${result.cityData.wikipedia.summary}</p>
+								<p class="mb-1">${result.cityData.wikipedia.summary}</p>
 						</div>
-						<div class="d-flex justify-content-center my-2">
-							<a class="btn btn-sm" id="wikiLink" href="https://${result.cityData.wikipedia.wikipediaUrl}" target="_blank" rel="noreferrer" role="button">Go to wiki</a>
-						</div>
-						<hr class="m-0 mb-2">
 						<div class="d-flex flex-column">
-								<h3 class="fs-6 mb-1">Popular locations:</h3>
-								<section id="venues">
-								<div class="">
-									${result.cityData.foursquare[0]}
-								</div>
-								<div class="">
-									${result.cityData.foursquare[1]}
-								</div>
-								<div class="">
-									${result.cityData.foursquare[2]}
-								</div>
-								<div class="">
-									${result.cityData.foursquare[3]}
-								</div>
-								<div class="">
-									${result.cityData.foursquare[4]}
-								</div>
-								</section>
+							<h3 class="fs-6 mb-1">Popular locations</h3>
+							<section id="venues">`;
+				if ((result.cityData.foursquare.length) > 1) {
+					cityInformation = cityInformation.concat(
+						`<div class="">
+							${result.cityData.foursquare[0]}
+						</div>
+						<div class="">
+							${result.cityData.foursquare[1]}
+						</div>
+						<div class="">
+							${result.cityData.foursquare[2]}
+						</div>
+						<div class="">
+							${result.cityData.foursquare[3]}
+						</div>
+						<div class="">
+							${result.cityData.foursquare[4]}
+						</div>
+						</section>
 						</div>	
-					</div>`
-				);
+						</div>`);
+				} else {
+					cityInformation = cityInformation.concat(
+						`<div class="">
+							${result.cityData.foursquare[0]}
+						</div>
+						</section>
+						</div>	
+						</div>`);
+				}
+				var popup = L.responsivePopup().setContent(cityInformation);
 				this.bindPopup(popup, popupOptions).openPopup();
 				map.spin(false);
 			}
