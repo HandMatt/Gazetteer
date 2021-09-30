@@ -437,6 +437,7 @@ function getCountryData(formData) {
 			if (result.status.name == "ok") {
 				const countryData = result.countryData;
 				const currencyData = (Object.entries(countryData.currency));
+				const languageData = (Object.entries(countryData.language));
 				$('#country-dropdown').val(countryData['countryCode']);
 
 				// Country Information
@@ -452,7 +453,7 @@ function getCountryData(formData) {
 				});
 				$('#region').html(countryData.region);
 				$('#subregion').html(countryData.subregion);
-				$('#language').html(countryData.language);
+				$('#language').html(languageData[0][1]);
 				$('#currencyName').html(currencyData[0][1].name);
 				$('#currencySymbol').html(`(${currencyData[0][1].symbol})`);
 
@@ -461,7 +462,7 @@ function getCountryData(formData) {
 					if (result.request.geoLocate) {
 						$('#fromCurrency').val(currencyData[0][0]);
 					} else {
-						$('#toCurrency').val(countryData.currency);
+						$('#toCurrency').val(currencyData[0][0]);
 						$('#exchangeResult').html("");
 					}
 				} else {

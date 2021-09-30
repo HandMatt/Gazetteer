@@ -164,10 +164,10 @@
   } else {
     $output['geonamesWiki'] = $geonamesWikiResult;
   }
-  $output['countryData']['flag'] = $restCountriesResult[0]['flags']['svg'];
+  $output['countryData']['flag'] = $restCountriesResult[0]['flags']['png'];
   $output['countryData']['region'] = $restCountriesResult[0]['region'];
   $output['countryData']['subregion'] = $restCountriesResult[0]['subregion'];
-  $output['countryData']['language'] = $restCountriesResult[0]['languages']['eng'];
+  $output['countryData']['language'] = $restCountriesResult[0]['languages'];
   $output['countryData']['currency'] = $restCountriesResult[0]['currencies'];
   $output['countryData']['newsArticles'] = $newsTableHtml;
   
