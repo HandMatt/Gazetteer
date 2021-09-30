@@ -23,7 +23,7 @@
   $countryData = $countryInfoResult['geonames'][0];
 
   // Gets country info using RestCountries
-  $restCountriesUrl = "https://restcountries.eu/rest/v2/alpha/" . $iso_2;
+  $restCountriesUrl = "https://restcountries.com/v3.1/alpha/" . $iso_2;
   curl_setopt($ch, CURLOPT_URL, $restCountriesUrl);
   $restCountriesResponse = curl_exec($ch);
   $restCountriesResult = json_decode($restCountriesResponse, true);
@@ -40,7 +40,7 @@
   $geonamesWiki = reset($geonamesWikiFiltered);
   //If no result try alt name
   if (!$geonamesWiki) {
-    $geonamesWikiUrl = "http://api.geonames.org/wikipediaSearchJSON?q=" . urlencode($restCountriesResult['name']) . "&title=" . urlencode($restCountriesResult['name']) . "&maxRows=10&username=" . $geonamesUsername;
+    $geonamesWikiUrl = "http://api.geonames.org/wikipediaSearchJSON?q=" . urlencode($restCountriesResult[0]['name']['common']) . "&title=" . urlencode($restCountriesResult['name']) . "&maxRows=10&username=" . $geonamesUsername;
     curl_setopt($ch, CURLOPT_URL,$geonamesWikiUrl);
     $geonamesWikiResponse = curl_exec($ch);
     $geonamesWikiResult = json_decode($geonamesWikiResponse, true);
@@ -164,13 +164,11 @@
   } else {
     $output['geonamesWiki'] = $geonamesWikiResult;
   }
-  $output['countryData']['flag'] = $restCountriesResult['flag'];
-  $output['countryData']['region'] = $restCountriesResult['region'];
-  $output['countryData']['subregion'] = $restCountriesResult['subregion'];
-  $output['countryData']['language'] = $restCountriesResult['languages'][0]['name'];
-  $output['countryData']['currencyName'] = $restCountriesResult['currencies'][0]['name'];
-  $output['countryData']['currencySymbol'] = $restCountriesResult['currencies'][0]['symbol'];
-  $output['countryData']['currencyCode'] = $restCountriesResult['currencies'][0]['code'];
+  $output['countryData']['flag'] = $restCountriesResult[0]['flags']['svg'];
+  $output['countryData']['region'] = $restCountriesResult[0]['region'];
+  $output['countryData']['subregion'] = $restCountriesResult[0]['subregion'];
+  $output['countryData']['language'] = $restCountriesResult[0]['languages']['eng'];
+  $output['countryData']['currency'] = $restCountriesResult[0]['currencies'];
   $output['countryData']['newsArticles'] = $newsTableHtml;
   
   //Weather Data Object
