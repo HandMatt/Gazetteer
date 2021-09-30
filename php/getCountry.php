@@ -70,8 +70,8 @@
       }
     }
   } else {
-    $latitude = $restCountriesResult['latlng'][0];
-    $longitude = $restCountriesResult['latlng'][1];
+    $latitude = $restCountriesResult[0]['latlng'][0];
+    $longitude = $restCountriesResult[0]['latlng'][1];
   }
 
   // Gets weather data from OpenWeather
@@ -170,6 +170,7 @@
   $output['countryData']['language'] = $restCountriesResult[0]['languages'];
   $output['countryData']['currency'] = $restCountriesResult[0]['currencies'];
   $output['countryData']['newsArticles'] = $newsTableHtml;
+  $output['restTest'] = $restCountriesResult;
   
   //Weather Data Object
   $output['openWeather'] = $fourDayForecast;
